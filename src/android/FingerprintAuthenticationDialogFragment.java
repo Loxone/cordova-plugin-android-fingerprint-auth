@@ -23,6 +23,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.hardware.fingerprint.FingerprintManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -122,9 +123,11 @@ public class FingerprintAuthenticationDialogFragment extends DialogFragment
         int second_dialog_button_id = getResources()
                 .getIdentifier("second_dialog_button", "id", FingerprintAuth.packageName);
         mSecondDialogButton = (Button) v.findViewById(second_dialog_button_id);
-        if (FingerprintAuth.mDisableBackup) {
+        Log.i(TAG, Build.BRAND);
+        if (FingerprintAuth.mDisableBackup || (Build.VERSION.SDK_INT >= 29 && Build.BRAND.equals("samsung"))){
             mSecondDialogButton.setVisibility(View.GONE);
         }
+
         mSecondDialogButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -202,6 +205,7 @@ public class FingerprintAuthenticationDialogFragment extends DialogFragment
                         .getIdentifier("use_backup", "string", FingerprintAuth.packageName);
                 mSecondDialogButton.setText(use_backup_id);
                 mFingerprintContent.setVisibility(View.VISIBLE);
+
                 break;
             case NEW_FINGERPRINT_ENROLLED:
                 // Intentional fall through
@@ -228,6 +232,7 @@ public class FingerprintAuthenticationDialogFragment extends DialogFragment
         }
     }
 
+    //Screen for backup Log-In
     private void showAuthenticationScreen() {
         // Create the Confirm Credentials screen. You can customize the title and description. Or
         // we will provide a generic one for you if you leave it null
@@ -237,6 +242,7 @@ public class FingerprintAuthenticationDialogFragment extends DialogFragment
         }
     }
 
+    //Result for backup Login
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_CODE_CONFIRM_DEVICE_CREDENTIALS) {

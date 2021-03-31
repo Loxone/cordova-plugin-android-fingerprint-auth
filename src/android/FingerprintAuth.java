@@ -15,8 +15,10 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.hardware.fingerprint.FingerprintManager;
+import android.os.Build;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Base64;
@@ -38,6 +40,7 @@ import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -56,6 +59,8 @@ public class FingerprintAuth extends CordovaPlugin {
     private static final String ANDROID_KEY_STORE = "AndroidKeyStore";
     public static final String FINGERPRINT_PREF_IV = "aes_iv";
     private static final int PERMISSIONS_REQUEST_FINGERPRINT = 346437;
+    private static final String CREDENTIAL_DELIMITER = "|:|";
+
 
     public static Context mContext;
     public static Activity mActivity;
@@ -354,12 +359,12 @@ public class FingerprintAuth extends CordovaPlugin {
                     try {
                         mKeyStore.deleteEntry(mClientId);
                         secretKeyDeleted = true;
-                        ivDeleted = deleteIV();                    
+                        ivDeleted = deleteIV();
                     } catch (KeyStoreException e) {
                         Log.e(TAG, "Error while deleting SecretKey.");
                     }
-                   
-                    if (ivDeleted && secretKeyDeleted) {  
+
+                    if (ivDeleted && secretKeyDeleted) {
                         mPluginResult = new PluginResult(PluginResult.Status.OK);
                         mCallbackContext.success();
                     } else {
@@ -498,7 +503,8 @@ public class FingerprintAuth extends CordovaPlugin {
         return deleteStringPreference(mContext, mClientId + mUsername, FINGERPRINT_PREF_IV);
     }
 
-    private static SecretKey getSecretKey() {
+    private static SecretKey
+    getSecretKey() {
         String errorMessage = "";
         String getSecretKeyExceptionErrorPrefix = "Failed to get SecretKey from KeyStore: ";
         SecretKey key = null;
@@ -542,12 +548,22 @@ public class FingerprintAuth extends CordovaPlugin {
             mKeyStore.load(null);
             // Set the alias of the entry in Android KeyStore where the key will appear
             // and the constrains (purposes) in the constructor of the Builder
-            mKeyGenerator.init(new KeyGenParameterSpec.Builder(mClientId,
-                    KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
-                    .setBlockModes(KeyProperties.BLOCK_MODE_CBC)
-                    .setUserAuthenticationRequired(mUserAuthRequired)
-                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7)
-                    .build());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                mKeyGenerator.init(new KeyGenParameterSpec.Builder(mClientId,
+                        KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+                        .setBlockModes(KeyProperties.BLOCK_MODE_CBC)
+                        .setUserAuthenticationRequired(mUserAuthRequired)
+                        .setInvalidatedByBiometricEnrollment(false)     //key should not be invalidated on biometric enrollment, only Android 7
+                        .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7)
+                        .build());
+            }else{
+                mKeyGenerator.init(new KeyGenParameterSpec.Builder(mClientId,
+                        KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+                        .setBlockModes(KeyProperties.BLOCK_MODE_CBC)
+                        .setUserAuthenticationRequired(mUserAuthRequired)
+                        .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7)
+                        .build());
+            }
             mKeyGenerator.generateKey();
             isKeyCreated = true;
         } catch (NoSuchAlgorithmException e) {
@@ -574,6 +590,7 @@ public class FingerprintAuth extends CordovaPlugin {
         return isKeyCreated;
     }
 
+
     public static void onAuthenticated(boolean withFingerprint,
                                        FingerprintManager.AuthenticationResult result) {
         JSONObject resultJson = new JSONObject();
@@ -585,12 +602,12 @@ public class FingerprintAuth extends CordovaPlugin {
                 // If the user has authenticated with fingerprint, verify that using cryptography and
                 // then return the encrypted (in Base 64) or decrypted mClientSecret
                 byte[] bytes;
-                if (mCipherModeCrypt) {
+                if (mCipherModeCrypt) { //encrypt
                     bytes = result.getCryptoObject().getCipher()
                             .doFinal(mClientSecret.getBytes("UTF-8"));
                     String encodedBytes = Base64.encodeToString(bytes, Base64.NO_WRAP);
                     resultJson.put("token", encodedBytes);
-                } else {
+                } else {    //decrypt
                     bytes = result.getCryptoObject().getCipher()
                             .doFinal(Base64.decode(mClientSecret, Base64.NO_WRAP));
                     String credentialString = new String(bytes, "UTF-8");
@@ -612,6 +629,7 @@ public class FingerprintAuth extends CordovaPlugin {
                 if (!initCipher()) {
                     createKey();
                 }
+
             }
             createdResultJson = true;
         } catch (BadPaddingException e) {
@@ -638,6 +656,8 @@ public class FingerprintAuth extends CordovaPlugin {
         }
         mCallbackContext.sendPluginResult(mPluginResult);
     }
+
+
 
     public static void onCancelled() {
         mCallbackContext.error(PluginError.FINGERPRINT_CANCELLED.name());
