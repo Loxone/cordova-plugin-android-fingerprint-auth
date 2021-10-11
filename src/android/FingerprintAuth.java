@@ -235,7 +235,7 @@ public class FingerprintAuth extends CordovaPlugin {
             }
             switch (action){
                 case "availability" :
-                    checkAndRequestPermission(Manifest.permission.USE_FINGERPRINT,
+                    checkAndRequestPermission(Manifest.permission.USE_BIOMETRIC,
                             PERMISSIONS_REQUEST_FINGERPRINT);
                     return true;
                 case "encrypt" :
