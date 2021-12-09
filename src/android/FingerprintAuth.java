@@ -107,7 +107,8 @@ public class FingerprintAuth extends CordovaPlugin {
         MISSING_ACTION_PARAMETERS,
         MISSING_PARAMETERS,
         NO_SUCH_ALGORITHM_EXCEPTION,
-        SECURITY_EXCEPTION
+        SECURITY_EXCEPTION,
+        SECRET_NOT_FOUND
     }
 
 
@@ -342,8 +343,14 @@ public class FingerprintAuth extends CordovaPlugin {
                                 .setAllowedAuthenticators(BIOMETRIC_STRONG)
                                 .build();
                         //starts Prompt Dialog
-                        initCipher();
-                        biometricPrompt.authenticate(promptInfo, new BiometricPrompt.CryptoObject(mCipher));
+                        if (initCipher()) {
+                            biometricPrompt.authenticate(promptInfo, new BiometricPrompt.CryptoObject(mCipher));
+                        } else {
+                            Log.e(TAG, "Fingerprint authentication: Cipher init failed");
+                            mPluginResult = new PluginResult(PluginResult.Status.ERROR);
+                            mCallbackContext.error(PluginError.SECRET_NOT_FOUND.name());
+                            mCallbackContext.sendPluginResult(mPluginResult);
+                        }
                     } else {
                         //only authentication for Appstart
                         promptInfo = new BiometricPrompt.PromptInfo.Builder()
