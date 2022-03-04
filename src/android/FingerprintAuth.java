@@ -65,6 +65,8 @@ public class FingerprintAuth extends CordovaPlugin {
     private static final String ANDROID_KEY_STORE = "AndroidKeyStore";
     public static final String FINGERPRINT_PREF_IV = "aes_iv";
     private static final int PERMISSIONS_REQUEST_FINGERPRINT = 346437;
+    private static int AUTHENTICATION_CANCELED_VIA_BACK_NAVIGATION = 10;
+    private static int AUTHENTICATION_CANCELED = 13;
 
     public static Context mContext;
     public static Activity mActivity;
@@ -312,7 +314,12 @@ public class FingerprintAuth extends CordovaPlugin {
                                                           @NonNull CharSequence errString) {
                             super.onAuthenticationError(errorCode, errString);
                             Log.i(TAG, 	"Authentication error: " + errString + " Code: " + errorCode);
-                            FingerprintAuth.onError("");
+
+                            if(errorCode == AUTHENTICATION_CANCELED || errorCode == AUTHENTICATION_CANCELED_VIA_BACK_NAVIGATION) {
+                                FingerprintAuth.onCancelled();
+                            } else {
+                                FingerprintAuth.onError("");
+                            }
                         }
 
                         @Override
