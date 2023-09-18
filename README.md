@@ -1,3 +1,6 @@
+# Update to Version 2.0.1
+Remove obsolete dependencies
+
 # Update to Version 2.0.0
 add Biometric-Manger / massive changes
 
