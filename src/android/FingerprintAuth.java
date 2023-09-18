@@ -1,9 +1,8 @@
 package com.cordova.plugin.android.fingerprintauth;
 
-import org.apache.cordova.CordovaWebView;
-import org.apache.cordova.CallbackContext;
-import org.apache.cordova.CordovaPlugin;
-import org.apache.cordova.CordovaInterface;
+import static androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG;
+import static androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK;
+import static androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL;
 
 import android.Manifest;
 import android.annotation.TargetApi;
@@ -16,6 +15,8 @@ import android.content.res.Resources;
 import android.os.Build;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
+import android.util.Base64;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.biometric.BiometricManager;
@@ -23,12 +24,13 @@ import androidx.biometric.BiometricPrompt;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import android.util.Base64;
-import android.util.Log;
-
 import com.loxone.kerberos.MainActivity;
 import com.loxone.kerberos.R;
 
+import org.apache.cordova.CallbackContext;
+import org.apache.cordova.CordovaInterface;
+import org.apache.cordova.CordovaPlugin;
+import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -53,10 +55,6 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
-import static androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG;
-import static androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK;
-import static androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL;
-
 @TargetApi(23)
 public class FingerprintAuth extends CordovaPlugin {
     public static final String TAG = "FingerprintAuth";
@@ -65,8 +63,8 @@ public class FingerprintAuth extends CordovaPlugin {
     private static final String ANDROID_KEY_STORE = "AndroidKeyStore";
     public static final String FINGERPRINT_PREF_IV = "aes_iv";
     private static final int PERMISSIONS_REQUEST_FINGERPRINT = 346437;
-    private static int AUTHENTICATION_CANCELED_VIA_BACK_NAVIGATION = 10;
-    private static int AUTHENTICATION_CANCELED = 13;
+    private static final int AUTHENTICATION_CANCELED_VIA_BACK_NAVIGATION = 10;
+    private static final int AUTHENTICATION_CANCELED = 13;
 
     public static Context mContext;
     public static Activity mActivity;
@@ -166,9 +164,7 @@ public class FingerprintAuth extends CordovaPlugin {
         try {
             mKeyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEY_STORE);
             mKeyStore = KeyStore.getInstance(ANDROID_KEY_STORE);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Failed to get an instance of KeyGenerator", e);
-        } catch (NoSuchProviderException e) {
+        } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
             throw new RuntimeException("Failed to get an instance of KeyGenerator", e);
         } catch (KeyStoreException e) {
             throw new RuntimeException("Failed to get an instance of KeyStore", e);
@@ -177,9 +173,7 @@ public class FingerprintAuth extends CordovaPlugin {
         try {
            mCipher = Cipher.getInstance(KeyProperties.KEY_ALGORITHM_AES + "/"
                     + KeyProperties.BLOCK_MODE_CBC + "/" + KeyProperties.ENCRYPTION_PADDING_PKCS7);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Failed to get an instance of Cipher", e);
-        } catch (NoSuchPaddingException e) {
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
             throw new RuntimeException("Failed to get an instance of Cipher", e);
         }
     }
@@ -206,7 +200,7 @@ public class FingerprintAuth extends CordovaPlugin {
         Log.v(TAG, "FingerprintAuth action: " + action);
         if(action != null){
             final JSONObject arg_object = args.getJSONObject(0);
-            JSONObject resultJson = new JSONObject();
+
             if (!action.equalsIgnoreCase("availability")) {
                 if (!arg_object.has("clientId")) {
                     Log.e(TAG, "Missing required parameters.");
@@ -415,10 +409,10 @@ public class FingerprintAuth extends CordovaPlugin {
             mCallbackContext.success(resultJson);
             mCallbackContext.sendPluginResult(mPluginResult);
         } catch (JSONException e) {
-            Log.e(TAG, "Availability Result Error: JSONException: " + e.toString());
+            Log.e(TAG, "Availability Result Error: JSONException: " + e);
             errorMessage = PluginError.JSON_EXCEPTION.name();
         } catch (SecurityException e) {
-            Log.e(TAG, "Availability Result Error: SecurityException: " + e.toString());
+            Log.e(TAG, "Availability Result Error: SecurityException: " + e);
             errorMessage = PluginError.SECURITY_EXCEPTION.name();
         }
         if (null != errorMessage) {
@@ -477,7 +471,6 @@ public class FingerprintAuth extends CordovaPlugin {
                     Log.e(TAG, "Fingerprint permission denied.");
                     setPluginResultError(PluginError.FINGERPRINT_PERMISSION_DENIED.name());
                 }
-                return;
             }
         }
     }
@@ -512,7 +505,7 @@ public class FingerprintAuth extends CordovaPlugin {
             }
             initCipher = true;
         } catch (Exception e) {
-            errorMessage = initCipherExceptionErrorPrefix + "Exception: " + e.toString();
+            errorMessage = initCipherExceptionErrorPrefix + "Exception: " + e;
         }
         if (!initCipher) {
             Log.e(TAG, errorMessage);
@@ -533,19 +526,19 @@ public class FingerprintAuth extends CordovaPlugin {
             key = (SecretKey) mKeyStore.getKey(mClientId, null);
         } catch (KeyStoreException e) {
             errorMessage = getSecretKeyExceptionErrorPrefix
-                    + "KeyStoreException: " + e.toString();
+                    + "KeyStoreException: " + e;
         } catch (CertificateException e) {
             errorMessage = getSecretKeyExceptionErrorPrefix
-                    + "CertificateException: " + e.toString();
+                    + "CertificateException: " + e;
         } catch (UnrecoverableKeyException e) {
             errorMessage = getSecretKeyExceptionErrorPrefix
-                    + "UnrecoverableKeyException: " + e.toString();
+                    + "UnrecoverableKeyException: " + e;
         } catch (IOException e) {
             errorMessage = getSecretKeyExceptionErrorPrefix
-                    + "IOException: " + e.toString();
+                    + "IOException: " + e;
         } catch (NoSuchAlgorithmException e) {
             errorMessage = getSecretKeyExceptionErrorPrefix
-                    + "NoSuchAlgorithmException: " + e.toString();
+                    + "NoSuchAlgorithmException: " + e;
         }
         if (key == null) {
             Log.e(TAG, errorMessage);
@@ -588,19 +581,19 @@ public class FingerprintAuth extends CordovaPlugin {
             isKeyCreated = true;
         } catch (NoSuchAlgorithmException e) {
             Log.e(TAG, createKeyExceptionErrorPrefix
-                    + "NoSuchAlgorithmException: " + e.toString());
+                    + "NoSuchAlgorithmException: " + e);
             errorMessage = PluginError.NO_SUCH_ALGORITHM_EXCEPTION.name();
         } catch (InvalidAlgorithmParameterException e) {
             Log.e(TAG, createKeyExceptionErrorPrefix
-                    + "InvalidAlgorithmParameterException: " + e.toString());
+                    + "InvalidAlgorithmParameterException: " + e);
             errorMessage = PluginError.INVALID_ALGORITHM_PARAMETER_EXCEPTION.name();
         } catch (CertificateException e) {
             Log.e(TAG, createKeyExceptionErrorPrefix
-                    + "CertificateException: " + e.toString());
+                    + "CertificateException: " + e);
             errorMessage = PluginError.CERTIFICATE_EXCEPTION.name();
         } catch (IOException e) {
             Log.e(TAG, createKeyExceptionErrorPrefix
-                    + "IOException: " + e.toString());
+                    + "IOException: " + e);
             errorMessage = PluginError.IO_EXCEPTION.name();
         }
         if (!isKeyCreated) {
@@ -650,14 +643,14 @@ public class FingerprintAuth extends CordovaPlugin {
             createdResultJson = true;
         } catch (BadPaddingException e) {
             Log.e(TAG, "Failed to encrypt the data with the generated key:"
-                    + " BadPaddingException:  " + e.toString());
+                    + " BadPaddingException:  " + e);
             errorMessage = PluginError.BAD_PADDING_EXCEPTION.name();
         } catch (IllegalBlockSizeException e) {
             Log.e(TAG, "Failed to encrypt the data with the generated key: "
-                    + "IllegalBlockSizeException: " + e.toString());
+                    + "IllegalBlockSizeException: " + e);
             errorMessage = PluginError.ILLEGAL_BLOCK_SIZE_EXCEPTION.name();
         } catch (JSONException e) {
-            Log.e(TAG, "Failed to set resultJson key value pair: " + e.toString());
+            Log.e(TAG, "Failed to set resultJson key value pair: " + e);
             errorMessage = PluginError.JSON_EXCEPTION.name();
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
