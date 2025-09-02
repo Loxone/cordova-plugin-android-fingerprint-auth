@@ -11,4 +11,4 @@ dependencies {
 
 }
 
-ext.cdvCompileSdkVersion = 30 //Biometric Manager framework needs cdvCompileSdkVersion > 29
+ext.cdvCompileSdkVersion = 35 //Biometric Manager framework needs cdvCompileSdkVersion > 29
