@@ -35,8 +35,6 @@
         <framework src="androidx.appcompat:appcompat:1.6.1"/>
     </platform>
 
-    <dependency id="cordova-plugin-android-fragmentactivity" url="https://github.com/Loxone/cordova-plugin-android-fragmentactivity.git" />
-
     <framework src="build-extras.gradle" custom="true" type="gradleReference" />
 
 
