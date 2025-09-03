@@ -24,7 +24,7 @@ import androidx.biometric.BiometricPrompt;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.loxone.kerberos.MainActivity;
+import androidx.fragment.app.FragmentActivity;
 import com.loxone.kerberos.R;
 
 import org.apache.cordova.CallbackContext;
@@ -68,7 +68,6 @@ public class FingerprintAuth extends CordovaPlugin {
 
     public static Context mContext;
     public static Activity mActivity;
-    private MainActivity mMainActivity;
     public KeyguardManager mKeyguardManager;
     public static KeyStore mKeyStore;
     public static KeyGenerator mKeyGenerator;
@@ -300,9 +299,10 @@ public class FingerprintAuth extends CordovaPlugin {
                 @Override
                 public void run() {
                     executor = ContextCompat.getMainExecutor(cordova.getActivity().getApplicationContext());
-                    mMainActivity = (MainActivity) cordova.getActivity();
+                    androidx.fragment.app.FragmentActivity fragmentActivity =  (androidx.fragment.app.FragmentActivity) cordova.getActivity();
 
-                    biometricPrompt = new BiometricPrompt(mMainActivity, executor, new BiometricPrompt.AuthenticationCallback() {
+                    biometricPrompt = new BiometricPrompt(fragmentActivity, executor, new BiometricPrompt.AuthenticationCallback() {
+
                         @Override
                         public void onAuthenticationError(int errorCode,
                                                           @NonNull CharSequence errString) {

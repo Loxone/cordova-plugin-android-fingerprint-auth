@@ -1,6 +1,5 @@
 android {
-    compileSdkVersion 24
-    buildToolsVersion "25.0.1"
+    compileSdkVersion 35  // Update to latest
     packagingOptions {
         exclude 'META-INF/LICENSE'
         exclude 'META-INF/NOTICE'
@@ -8,7 +7,5 @@ android {
 }
 
 dependencies {
-
+    // Add if needed
 }
-
-ext.cdvCompileSdkVersion = 35 //Biometric Manager framework needs cdvCompileSdkVersion > 29
