@@ -23,15 +23,17 @@
         </config-file>
         <config-file target="AndroidManifest.xml" parent="/*">
             <uses-permission android:name="android.permission.USE_FINGERPRINT" />
-            <!--<uses-sdk android:minSdkVersion="23" android:targetSdkVersion="23" />-->
+            <uses-permission android:name="android.permission.USE_BIOMETRIC" />
         </config-file>
 
         <source-file src="build-extras.gradle" target-dir="." />
         <source-file src="src/android/FingerprintAuth.java" target-dir="src/com/cordova/plugin/android/fingerprintauth" />
+        
+        <!-- AndroidX Dependencies -->
         <framework src="androidx.biometric:biometric:1.1.0"/>
+        <framework src="androidx.fragment:fragment:1.6.1"/>
+        <framework src="androidx.appcompat:appcompat:1.6.1"/>
     </platform>
-
-    <dependency id="cordova-plugin-android-fragmentactivity" url="https://github.com/Loxone/cordova-plugin-android-fragmentactivity.git" />
 
     <framework src="build-extras.gradle" custom="true" type="gradleReference" />
 
